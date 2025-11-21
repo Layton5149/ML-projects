@@ -2,6 +2,11 @@ import pandas as pd
 import numpy as np
 import sklearn as sk
 from sklearn.neighbors import NearestNeighbors
+import flask
+from flask import render_template , url_for
+
+app = flask.Flask(__name__)
+
 
 data = pd.read_csv("dataset/mal_anime.csv")
 
@@ -12,6 +17,12 @@ print (data.count())
 
 data = data.dropna()
 
+movieNames = []
+
+for i in range( len(data)// 10):
+    movieNames.append(data.iloc[i]['title'])
+
+print (movieNames)
 
 print (data.count())
 
@@ -36,6 +47,7 @@ features = data[['Genres', 'Studios', 'Producers', 'Rating']]
 nbrs = NearestNeighbors(n_neighbors=5, algorithm='auto').fit(features)
 
 def find_similar_animes(anime_title, n_neighbors=5):
+    movieList = []
     # find the index of the anime with the given title
     idx = data.index[data['title'] == anime_title]
     if len(idx) == 0:
@@ -54,7 +66,27 @@ def find_similar_animes(anime_title, n_neighbors=5):
         if neighbor_idx == idx:
             continue  # skip itself
         title = data.iloc[neighbor_idx]["title"]
-        print(f"- {title}")
+        movieList.append(title)
+    
+    return movieList
 
 
 find_similar_animes("Attack on Titan")
+
+@app.route('/')
+def home():
+    return render_template("index.html")
+
+
+@app.post('/recommend')
+def reccomend():
+    # get the anime title from the form
+    anime_title = flask.request.form.get('anime_title')
+    print(f"Received anime title: {anime_title}")
+    return find_similar_animes(anime_title)
+
+
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
