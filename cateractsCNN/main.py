@@ -54,7 +54,7 @@ model = models.Sequential([
 
 model.summary()
 
-#Compile the model
+#Compile the modela
 
 model.compile(
     optimizer='adam',
