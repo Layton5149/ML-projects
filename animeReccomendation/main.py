@@ -8,13 +8,12 @@ from flask import render_template , url_for
 app = flask.Flask(__name__)
 
 
-data = pd.read_csv("dataset/mal_anime.csv")
+originalData = pd.read_csv("dataset/mal_anime.csv")
 
 #select only some colums
-data = data[["myanimelist_id", "title", "description", "image", "Type", "Genres", "Studios", "Producers", "Rating", "Popularity", "source_url"]]
+data = originalData[["myanimelist_id", "title", "description", "image", "Type", "Genres", "Studios", "Producers", "Rating", "Popularity", "source_url"]]
 
-print (data.count())
-
+featureData = data.dropna()
 data = data.dropna()
 
 movieNames = []
@@ -22,23 +21,11 @@ movieNames = []
 for i in range( len(data)// 10):
     movieNames.append(data.iloc[i]['title'])
 
-print (movieNames)
-
-print (data.count())
-
-print(data.dtypes)
-
-print (f"prodcuers unique: {data['Producers'].nunique()}")
-print (f"studios unique: {data['Studios'].nunique()}")
-print (f"genres unique: {data['Genres'].nunique()}")
-
 #convert genres, studios, producers to numberics
 data['Genres'] = data['Genres'].astype('category').cat.codes
 data['Studios'] = data['Studios'].astype('category').cat.codes
 data['Producers'] = data['Producers'].astype('category').cat.codes
 data['Rating'] = data['Rating'].astype('category').cat.codes
-
-print (data.dtypes)
 
 
 #use k nearest neigbours the data based on genres, studios, producers, rating and popularity
@@ -46,7 +33,7 @@ print (data.dtypes)
 features = data[['Genres', 'Studios', 'Producers', 'Rating']]
 nbrs = NearestNeighbors(n_neighbors=5, algorithm='auto').fit(features)
 
-def find_similar_animes(anime_title, n_neighbors=5):
+def find_similar_animes(anime_title, n_neighbors=6):
     movieList = []
     # find the index of the anime with the given title
     idx = data.index[data['title'] == anime_title]
@@ -63,15 +50,32 @@ def find_similar_animes(anime_title, n_neighbors=5):
     print("Similar animes:")
 
     for neighbor_idx in indices[0]:
+        moveiFeaturesList = []
+
         if neighbor_idx == idx:
-            continue  # skip itself
-        title = data.iloc[neighbor_idx]["title"]
-        movieList.append(title)
+            continue  
+
+        title = featureData.iloc[neighbor_idx]['title']
+        image = featureData.iloc[neighbor_idx]['image']
+        decription = featureData.iloc[neighbor_idx]['description']
+        url_source = featureData.iloc[neighbor_idx]['source_url']
+        genres = featureData.iloc[neighbor_idx]['Genres']
+        studios = featureData.iloc[neighbor_idx]['Studios']
+        producers = featureData.iloc[neighbor_idx]['Producers']
+
+        moveiFeaturesList.append(title)
+        moveiFeaturesList.append(image)
+        moveiFeaturesList.append(decription)
+        moveiFeaturesList.append(url_source)
+        moveiFeaturesList.append(genres)
+        moveiFeaturesList.append(studios)
+        moveiFeaturesList.append(producers)
+
+        movieList.append(moveiFeaturesList)
     
+    print (movieList)
     return movieList
 
-
-find_similar_animes("Attack on Titan")
 
 @app.route('/')
 def home():
@@ -80,13 +84,12 @@ def home():
 
 @app.post('/recommend')
 def reccomend():
-    # get the anime title from the form
-    anime_title = flask.request.form.get('anime_title')
+    # get the anime title from the body of the request
+    anime_title = flask.request.json.get('title')
     print(f"Received anime title: {anime_title}")
     return find_similar_animes(anime_title)
 
-
-
+find_similar_animes("Naruto")
 
 if __name__ == '__main__':
     app.run(debug=True)
