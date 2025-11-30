@@ -1,12 +1,52 @@
+let movieNames = [];
 
-addEventListener("DOMContentLoaded", () => {
+addEventListener("DOMContentLoaded", async () => {
     const searchBtn = document.getElementById("searchBtn");
     const resultsSection = document.getElementById("results");
     const searchText = document.getElementById("search-text");
+    const suggestionsBox = document.getElementById("suggestions");
+
+    suggestionsBox.classList.add("d-none");
+
+    // Load movie names from JSON file
+    try {
+        const response = await fetch("/static/movieNames.json");
+        movieNames = await response.json();
+    } catch (error) {
+        console.error("Error loading movie names:", error);
+    }
+
+    //autofill search box with movie names 
+    searchText.addEventListener("input", () => {
+        if (searchText.value.trim() == "") {
+            suggestionsBox.classList.add("d-none");
+        }
+        else {
+            suggestionsBox.classList.remove("d-none");
+        }
+        const input = searchText.value.toLowerCase();
+        const suggestions = movieNames.filter(name => name.toLowerCase().startsWith(input));
+        console.log("hello world!!!");
+
+        //dropdown box
+        suggestionsBox.innerHTML = "";
+        suggestions.forEach(suggestion => {
+            const suggestionItem = document.createElement("div");
+            suggestionItem.textContent = suggestion;
+            suggestionItem.classList.add("suggestion-item", "p-2", "hover-bg-light");
+
+            suggestionItem.addEventListener("click", () => {
+                searchText.value = suggestion;
+                suggestionsBox.innerHTML = "";
+            });
+
+            suggestionsBox.appendChild(suggestionItem);
+        });
+    });
 
     searchBtn.addEventListener("click", async (e) => {
         e.preventDefault();
-        
+
         // Clear previous results
         resultsSection.innerHTML = "";
 

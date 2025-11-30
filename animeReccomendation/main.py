@@ -4,6 +4,7 @@ import sklearn as sk
 from sklearn.neighbors import NearestNeighbors
 import flask
 from flask import render_template , url_for
+import json
 
 app = flask.Flask(__name__)
 
@@ -16,10 +17,14 @@ data = originalData[["myanimelist_id", "title", "description", "image", "Type", 
 featureData = data.dropna()
 data = data.dropna()
 
+#create a list of movie names
 movieNames = []
 
 for i in range( len(data)// 10):
     movieNames.append(data.iloc[i]['title'])
+
+with open('static/movieNames.json', 'w') as f:
+    json.dump(movieNames, f)
 
 #convert genres, studios, producers to numberics
 data['Genres'] = data['Genres'].astype('category').cat.codes
